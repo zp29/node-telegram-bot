@@ -53,11 +53,27 @@ async function downloadVideo(msg) {
         // 下载文件到本地
         const fileStream = fs.createWriteStream(`./${msg.video.file_name}`);
         https.get(fileUrl, (response) => {
+            const totalSize = parseInt(response.headers['content-length'], 10);
+            let downloadedSize = 0;
+
+            // 创建一个可写流到本地文件
+            const fileStream = fs.createWriteStream(`./${fileName}`);
+
+            // 下载并跟踪进度
+            response.on('data', (chunk) => {
+                downloadedSize += chunk.length;
+                const progress = ((downloadedSize / totalSize) * 100).toFixed(2);
+                process.stdout.clearLine();
+                process.stdout.cursorTo(0);
+                process.stdout.write(`下载进度: ${progress}%`);
+            });
+
+            // 当文件下载完成时
             response.pipe(fileStream);
             fileStream.on('finish', () => {
-                console.log(`视频已下载: ${msg.video.file_name}`);
-                return msg.video.file_name;
+                console.log(`\n视频下载完成: ${fileName}`);
             });
+
         }).on('error', (err) => {
             console.error('下载出错:', err);
             return false;
